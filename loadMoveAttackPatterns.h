@@ -16,22 +16,22 @@ public:
             U64 attacks = 0;
             int x = i % 8;
             int y = i / 8;
-            //up-left = -17 positions
-            if (y >= 2 && x >= 1) attacks |= knight >> 17;
-            //up-right == -15
-            if (y >= 2 && x <= 6) attacks |= knight >> 15;
-            //left-up == -10
-            if (y >= 1 && x >= 2) attacks |= knight >> 10;
-            //left-down == 6
-            if (y <=6 && x >= 2) attacks |= knight << 6;
-            //down-left == 15
+            //up-left
             if (y <= 5 && x >= 1) attacks |= knight << 15;
-            //down-right == 17
-            if (y <= 5 && x <= 6)  attacks |= knight << 17;
-            //right-up == -6
+            //up-right
+            if (y <= 5 && x <= 6) attacks |= knight << 17;
+            //left-up
+            if (y <= 6  && x >= 2) attacks |= knight << 6;
+            //left-down
+            if (y >= 1 && x >= 2) attacks |= knight >> 10;
+            //down-left
+            if (y >= 2 && x >= 1) attacks |= knight >> 17;
+            //down-right
+            if (y >= 2  && x <= 6)  attacks |= knight >> 15;
+            //right-up
+            if (y <= 6  && x <= 5) attacks |= knight << 10;
+            //right-down
             if (y >= 1 && x <= 5) attacks |= knight >> 6;
-            //right-down ==10
-            if (y <= 6 && x <= 5) attacks |= knight << 10;
             array[i] = attacks;
         }
     }
@@ -42,24 +42,44 @@ public:
             U64 attacks = 0;
             int x = i % 8;
             int y = i / 8;
-
         }
     }
 
-    static void rook_slide_right(U64* pos){
-        for (int i = 0; i <64; i++){
+    static void rook_moves(U64* array){
+        for (int i = 0; i < 64; ++i) {
             U64 rook = 1ULL << i;
-            bool thing = true;
-            int startx = i %8;
-            int starty = i /8;
-            int pos = i;
-            while (pos % 8 != 0){
-
-            }
-
-
+            array[i] = rook_slides(rook);
         }
     }
+
+    static U64 rook_slides(U64 board){
+        int ls = __builtin_ctzll(board);
+        U64 rook = 1ULL << ls;
+
+        int x = ls % 8;
+        int y = ls / 8;
+
+        U64 moves = 0;
+
+        // left
+        for (int nx = x - 1; nx >= 0; nx--)
+            moves |= 1ULL << (y * 8 + nx);
+        //right
+        for (int nx = x + 1; nx < 8; nx++)
+            moves |= 1ULL << (y * 8 + nx);
+        //up
+        for (int ny = y + 1; ny < 8; ++ny)
+            moves |= 1ULL << (ny * 8 + x);
+        //down
+        for (int ny = y - 1; ny >= 0; --ny)
+            moves |= 1ULL << (ny * 8 + x);
+
+
+        return moves;
+    }
+
+
+
 
     static void bishop_move(U64* array){
 

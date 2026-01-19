@@ -35,22 +35,25 @@ public:
     Board(){
         init();
         loadMoveAttackPatterns::knight_move_attack(knight_attacks);
+        loadMoveAttackPatterns::rook_moves(rook_attacks);
+
         for (int i = 0; i < 64; i++){
             printBoard(knight_attacks[i]);
             std::cout << "\n";
-
         }
-        printBoard(fullBoard[whiteKnight]);
+
+
+        printBoard(fullBoard[whitePawn]);
     };
 
-    U64 knight_attacks[63];
-    U64 rook_attacks[63];
-    U64 bishop_attacks[63];
-    U64 pawn_attacks[63];
-    U64 king_attacks[63];
-    U64 queen_attacks[63];
+    U64 knight_attacks[63]{};
+    U64 rook_attacks[63]{};
+    U64 bishop_attacks[63]{};
+    U64 pawn_attacks[63]{};
+    U64 king_attacks[63]{};
+    U64 queen_attacks[63]{};
 
-    U64 fullBoard[pieceCount]{};
+    U64 fullBoard[pieceCount];
 
     U64 whitePieces() {
         return fullBoard[whitePawn] | fullBoard[whiteKnight] | fullBoard[whiteBishop] | fullBoard[whiteRook] |
@@ -80,12 +83,10 @@ public:
 
     static void printBoard(U64 board){
         for (int i = 63; i >= 0; i--) {
-
             if (board & (1ULL << i))
                 std::cout << " x ";
             else
                 std::cout << " . ";
-
             if (i % 8 == 0)
                 std::cout << "\n";
         }
