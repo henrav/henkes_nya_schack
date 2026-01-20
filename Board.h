@@ -34,15 +34,12 @@ class Board {
 public:
     Board(){
         init();
-        loadMoveAttackPatterns::knight_move_attack(knight_attacks);
-        loadMoveAttackPatterns::rook_moves(rook_attacks);
-
+        loadMoveAttackPatterns::load_knight_moves(knight_attacks);
+        loadMoveAttackPatterns::load_king_moves(king_attacks);
+        loadMoveAttackPatterns::queen_moves(queen_attacks);
         for (int i = 0; i < 64; i++){
-            printBoard(knight_attacks[i]);
-            std::cout << "\n";
+            printBoard(queen_attacks[i]);
         }
-
-
         printBoard(fullBoard[whitePawn]);
     };
 
@@ -80,16 +77,16 @@ public:
         fullBoard[blackQueen] = 0x0800000000000000;
         fullBoard[blackKing] = 0x1000000000000000;
     };
-
-    static void printBoard(U64 board){
-        for (int i = 63; i >= 0; i--) {
-            if (board & (1ULL << i))
-                std::cout << " x ";
-            else
-                std::cout << " . ";
-            if (i % 8 == 0)
-                std::cout << "\n";
+    static void printBoard(U64 board) {
+        for (int rank = 7; rank >= 0; rank--) {
+            for (int file = 0; file < 8; file++) {
+                int sq = rank * 8 + file;
+                std::cout << ((board & (1ULL << sq)) ? " x " : " . ");
+            }
+            std::cout << "\n";
         }
+        std::cout << "\n";
+
     }
 
 };
