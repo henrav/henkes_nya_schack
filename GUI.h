@@ -11,15 +11,11 @@
 #include <iostream>
 #include <thread>
 #include "Board.h"
+#include "Enums.h"
 
-using namespace std;
-using U64 = std::uint64_t;
-
-enum class PieceType { Pawn, Knight, Bishop, Rook, Queen, King };
-enum class Color { White, Black };
 
 struct Piece {
-    PieceType type;
+    chessPiece type;
     Color color;
     int row{};
     int col{};
@@ -53,8 +49,14 @@ private:
     sf::RenderWindow &window;
     bool pieceSelected = false;
     PieceMoveData moveData;
+
+    /**
+     * pointer to piece in Pieces list;
+     */
     Piece *selectedPiece = nullptr;
     vector<HighlightHistory> Highlight;
+    bool playersTurn;
+    Board bitBoard;
 public:
     GUI(sf::RenderWindow &window);
 
@@ -82,9 +84,14 @@ public:
     sf::Vector2<float> getOffsetPos();
 
     void updateGUI(Board& board);
+    void printType(chessPiece type);
+    void send_to_board();
+
+
 
 
     };
+
 
 
 #endif //SCHACK_GUI_H

@@ -11,7 +11,9 @@ add_executable(schack main.cpp
         GUI.h
         loadMoveAttackPatterns.cpp
         loadMoveAttackPatterns.h
-        loadMoveAttackPatterns.h)
+        loadMoveAttackPatterns.h
+        Enums.h
+)
 
 target_link_libraries(schack
         PRIVATE

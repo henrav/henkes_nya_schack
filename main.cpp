@@ -13,9 +13,9 @@ void render(){
 
 int main() {
     sf::RenderWindow window = sf::RenderWindow(sf::VideoMode({800,600}), "tjena");
-    std::thread renderThread(render);   // start board thread first
+    std::thread renderThread(render);
     GUI gui(window);
-
+    gui.run();
     return 0;
 }
 

@@ -8,47 +8,21 @@
 #include <SFML/Graphics.hpp>
 #include <iostream>
 #include "loadMoveAttackPatterns.h"
-
-using U64 = std::uint64_t;
-
-enum Pieces {
-    whitePawn,
-    whiteKnight,
-    whiteBishop,
-    whiteRook,
-    whiteQueen,
-    whiteKing,
-    blackPawn,
-    blackKnight,
-    blackBishop,
-    blackRook,
-    blackQueen,
-    blackKing,
-    pieceCount
-};
-
-
+#include "Enums.h"
 
 
 class Board {
+    bool playersTurn;
 public:
     Board(){
         init();
-        loadMoveAttackPatterns::load_knight_moves(knight_attacks);
-        loadMoveAttackPatterns::load_king_moves(king_attacks);
-        loadMoveAttackPatterns::queen_moves(queen_attacks);
-        for (int i = 0; i < 64; i++){
-            printBoard(queen_attacks[i]);
-        }
+        loadMoveAttackPatterns::init_tables();
         printBoard(fullBoard[whitePawn]);
-    };
+        for (int i = 0; i < 64; i++){
+             printBoard(loadMoveAttackPatterns::loaded_pawn_moves[0][i])       ;
 
-    U64 knight_attacks[63]{};
-    U64 rook_attacks[63]{};
-    U64 bishop_attacks[63]{};
-    U64 pawn_attacks[63]{};
-    U64 king_attacks[63]{};
-    U64 queen_attacks[63]{};
+        }
+    };
 
     U64 fullBoard[pieceCount];
 
@@ -60,6 +34,28 @@ public:
     U64 blackPieces() {
         return fullBoard[blackPawn] | fullBoard[blackKnight] | fullBoard[blackBishop] | fullBoard[blackRook] |
                fullBoard[blackQueen] | fullBoard[blackKing];
+    }
+
+    void on_player_move(int toX, int toY, int fromX, int fromY, chessPiece piece){
+        U64 from = convert_coords_to_U64(fromX, fromY);
+        U64 to = convert_coords_to_U64(toX, toY);
+        for (int i = 0; i < pieceCount; i++){
+            if (from & fullBoard[i]){
+                fullBoard[i] &= ~from;
+                fullBoard[i] |= to;
+                printBoard(fullBoard[i]);
+                return;
+            }
+        }
+        cout <<"ingen där " << endl;
+    }
+
+
+
+
+
+    U64 convert_coords_to_U64(int xpos, int ypos){
+       return 1ULL << xpos + (ypos * 8);
     }
 
     void init() {

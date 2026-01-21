@@ -57,31 +57,55 @@ void GUI::init() {
                 Piece piece(whiteRookTexture);
                 piece.color = black ? Color::Black : Color::White;
 
-                if (it == 0 || it == 7)
+                if (it == 0 || it == 7) {
                     piece.sprite.setTexture(blackRookTexture);
-                else if (it == 1 || it == 6)
+                    piece.type = blackRook;
+                }
+                else if (it == 1 || it == 6) {
                     piece.sprite.setTexture(blackKnightTexture);
-                else if (it == 2 || it == 5)
+                    piece.type = blackKnight;
+                }
+                else if (it == 2 || it == 5) {
                     piece.sprite.setTexture(blackBishopTexture);
-                else if (it == 3)
+                    piece.type = blackBishop;
+                }
+                else if (it == 3) {
                     piece.sprite.setTexture(blackQueenTexture);
-                else if (it == 4)
+                    piece.type = blackQueen;
+                }
+                else if (it == 4) {
                     piece.sprite.setTexture(blackKingTexture);
-                else if (it >= 8 && it <= 15)
+                    piece.type = blackKing;
+                }
+                else if (it >= 8 && it <= 15) {
                     piece.sprite.setTexture(blackPawnTexture);
+                    piece.type = blackPawn;
+                }
 
-                else if (it >= 48 && it <= 55)
+                else if (it >= 48 && it <= 55) {
                     piece.sprite.setTexture(whitePawnTexture);
-                else if (it == 56 || it == 63)
+                    piece.type = whitePawn;
+                }
+                else if (it == 56 || it == 63) {
                     piece.sprite.setTexture(whiteRookTexture);
-                else if (it == 57 || it == 62)
+                    piece.type = whiteRook;
+                }
+                else if (it == 57 || it == 62) {
                     piece.sprite.setTexture(whiteKnightTexture);
-                else if (it == 58 || it == 61)
+                    piece.type = whiteKnight;
+                }
+                else if (it == 58 || it == 61) {
                     piece.sprite.setTexture(whiteBishopTexture);
-                else if (it == 59)
+                    piece.type = whiteBishop;
+                }
+                else if (it == 59) {
                     piece.sprite.setTexture(whiteQueenTexture);
-                else if (it == 60)
+                    piece.type = whiteQueen;
+                }
+                else if (it == 60) {
                     piece.sprite.setTexture(whiteKingTexture);
+                    piece.type = whiteKing;
+                }
 
                 piece.sprite.setPosition({Size * col, Size * row});
                 piece.sprite.scale({0.4f, 0.4f});
@@ -180,8 +204,16 @@ void GUI::handlePieceDrop(sf::Event::MouseButtonPressed const * data){
         if (moveData.startX == posx && moveData.startY == posy){
             cout << "same pos" << endl;
         }else{
+            MoveRequest moveRequest {
+                selectedPiece->col,
+                selectedPiece->row,
+                posx,
+                posy,
+                selectedPiece->type
+            };
             selectedPiece->row = posy;
             selectedPiece->col = posx;
+            printType(selectedPiece->type);
         }
         selectedPiece = nullptr;
         pieceSelected = false;
@@ -192,6 +224,29 @@ void GUI::handlePieceDrop(sf::Event::MouseButtonPressed const * data){
         */
     }
 }
+
+void GUI::send_to_board(){
+}
+
+void GUI::printType(chessPiece type) {
+    switch (type) {
+        case whitePawn:   std::cout << "white pawn\n"; break;
+        case whiteKnight: std::cout << "white knight\n"; break;
+        case whiteBishop: std::cout << "white bishop\n"; break;
+        case whiteRook:   std::cout << "white rook\n"; break;
+        case whiteQueen:  std::cout << "white queen\n"; break;
+        case whiteKing:   std::cout << "white king\n"; break;
+
+        case blackPawn:   std::cout << "black pawn\n"; break;
+        case blackKnight: std::cout << "black knight\n"; break;
+        case blackBishop: std::cout << "black bishop\n"; break;
+        case blackRook:   std::cout << "black rook\n"; break;
+        case blackQueen:  std::cout << "black queen\n"; break;
+        case blackKing:   std::cout << "black king\n"; break;
+        default:          std::cout << "unknown piece\n"; break;
+    }
+}
+
 
 void GUI::handlePiecePickup(sf::Event::MouseButtonPressed const * data){
     float mousex = data->position.x;
@@ -266,7 +321,7 @@ void GUI::draw(sf::RenderWindow* Window) {
 
 GUI::GUI(sf::RenderWindow& Window) : window(Window) {
     init();
-    run();
+    bitBoard = Board();
 }
 
 inline float GUI::UpdateTileSize() {

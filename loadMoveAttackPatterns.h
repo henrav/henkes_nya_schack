@@ -7,6 +7,7 @@
 #include "iostream"
 using U64 = std::uint64_t;
 
+
 class loadMoveAttackPatterns {
 public:
     static const U64 notAFile = 0xfefefefefefefefe;
@@ -19,9 +20,19 @@ public:
     static U64 shiftWest(U64 b)      {return (b & notAFile) >> 1;}
     static U64 shiftSouthwest(U64 b) {return (b & notAFile) >> 9;}
     static U64 shiftNorthwest(U64 b) {return (b & notAFile) << 7;}
+    inline static U64 loaded_knight_moves[64];
+    inline static U64 loaded_king_moves[64];
+    inline static U64 loaded_pawn_moves[2][64];
+
+    static void init_tables() {
+        load_knight_moves();
+        load_king_moves();
+        load_pawn_moves_white();
+        load_pawn_moves_black();
+    }
 
 
-    static void load_knight_moves (U64* array){
+    static void load_knight_moves (){
         for (int i = 0; i < 64; i++){
             U64 knight = 1ULL << i;
             U64 attacks = 0;
@@ -43,11 +54,13 @@ public:
                 if (y <= 6  && x <= 5) attacks |= knight << 10;
             //right-down
             if (y >= 1 && x <= 5) attacks |= knight >> 6;
-            array[i] = attacks;
+            loaded_knight_moves[i] = attacks;
         }
     }
 
-    static void load_king_moves(U64* array){
+
+
+    static void load_king_moves(){
         for (int i = 0; i < 64; i++){
             U64 attacks = 0;
             U64 start = 1ULL << i;
@@ -82,24 +95,43 @@ public:
             ray = start;
             ray = shiftWest(ray);
             attacks |= ray;
-
-            array[i] = attacks;
+            loaded_king_moves[i] = attacks;
         }
     }
 
-    static void rook_moves(U64* array){
+
+    static void load_pawn_moves_white(){
+        for (int i = 0; i < 64; i++){
+            U64 pawn = 1ULL << i;
+            U64 atk = 0;
+            atk |= shiftNortheast(pawn);
+            atk |= shiftNorthwest(pawn);
+            loaded_pawn_moves[0][i] = atk;
+        }
+    }
+
+    static void load_pawn_moves_black(){
+        for (int i = 0; i < 64; i++){
+            U64 pawn = 1ULL << i;
+            U64 atk = 0;
+            atk |= shiftSoutheast(pawn);
+            atk |= shiftSouthwest(pawn);
+            loaded_pawn_moves[1][i] = atk;
+        }
+    }
+
+    static void rook_moves(){
         for (int i = 0; i < 64; ++i) {
             U64 rook = 1ULL << i;
-            array[i] = rook_slides(i);
+
         }
     }
 
-    static void queen_moves(U64* array){
+    static void queen_moves(){
         for (int i = 0; i < 64; i++){
             U64 rook = rook_slides(i);
             U64 bishop = bishop_slides(i);
             U64 queen = rook | bishop;
-            array[i] = queen;
         }
     }
 
@@ -108,6 +140,14 @@ public:
         U64 bishop = bishop_move(pos, opposingPieces, ownPieces);
         U64 queen = rook | bishop;
         return queen;
+    }
+
+    static U64 knight_move(int pos, U64 ownPieces){
+        return loaded_knight_moves[pos] & ~ownPieces;
+    }
+
+    static U64 king_move(int pos, U64 ownPieces){
+        return loaded_king_moves[pos] & ~ownPieces;
     }
 
     static U64 bishop_move(int pos, U64 opposingPieces, U64 ownPieces) {
