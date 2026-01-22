@@ -7,7 +7,6 @@ using namespace std;
 #define CHECK_BIT(var,pos) ((var) & (1<<(pos)))
 
 void GUI::init() {
-    UpdateTileSize();
     if (!whitePawnTexture.loadFromFile("../Bilder/VitBonde.png")) {
         cerr << "Failed to load texture for white rook!" << endl;
     }
@@ -51,70 +50,91 @@ void GUI::init() {
             sf::RectangleShape rect({Size, Size});
             rect.setPosition({Size * col, Size * row});
             bool black = (col + row) % 2 == 0;
-            sf::Color blacky(105, 105, 105);
-            rect.setFillColor(black ? blacky : sf::Color::White);
-            if (row < 2 || row > 5){
-                Piece piece(whiteRookTexture);
-                piece.color = black ? Color::Black : Color::White;
-
-                if (it == 0 || it == 7) {
-                    piece.sprite.setTexture(blackRookTexture);
-                    piece.type = blackRook;
-                }
-                else if (it == 1 || it == 6) {
-                    piece.sprite.setTexture(blackKnightTexture);
-                    piece.type = blackKnight;
-                }
-                else if (it == 2 || it == 5) {
-                    piece.sprite.setTexture(blackBishopTexture);
-                    piece.type = blackBishop;
-                }
-                else if (it == 3) {
-                    piece.sprite.setTexture(blackQueenTexture);
-                    piece.type = blackQueen;
-                }
-                else if (it == 4) {
-                    piece.sprite.setTexture(blackKingTexture);
-                    piece.type = blackKing;
-                }
-                else if (it >= 8 && it <= 15) {
-                    piece.sprite.setTexture(blackPawnTexture);
-                    piece.type = blackPawn;
-                }
-
-                else if (it >= 48 && it <= 55) {
-                    piece.sprite.setTexture(whitePawnTexture);
-                    piece.type = whitePawn;
-                }
-                else if (it == 56 || it == 63) {
-                    piece.sprite.setTexture(whiteRookTexture);
-                    piece.type = whiteRook;
-                }
-                else if (it == 57 || it == 62) {
-                    piece.sprite.setTexture(whiteKnightTexture);
-                    piece.type = whiteKnight;
-                }
-                else if (it == 58 || it == 61) {
-                    piece.sprite.setTexture(whiteBishopTexture);
-                    piece.type = whiteBishop;
-                }
-                else if (it == 59) {
-                    piece.sprite.setTexture(whiteQueenTexture);
-                    piece.type = whiteQueen;
-                }
-                else if (it == 60) {
-                    piece.sprite.setTexture(whiteKingTexture);
-                    piece.type = whiteKing;
-                }
-
-                piece.sprite.setPosition({Size * col, Size * row});
-                piece.sprite.scale({0.4f, 0.4f});
-                piece.col = col;
-                piece.row = row;
-                Pieces.emplace_back(piece);
-            }
+            sf::Color grey(105, 105, 105);
+            rect.setFillColor(black ? grey : sf::Color::White);
             it++;
             board.emplace_back(rect);
+        }
+    }
+    updateGUIFromBoard(worker.get_board());
+
+}
+
+void GUI::updateGUIFromBoard( Board b) {
+    Pieces.clear();
+    UpdateTileSize();
+
+    for (int p = 0; p < pieceCount; ++p) {
+        U64 bb = b.fullBoard[p];
+        while (bb) {
+            int sq = __builtin_ctzll(bb);
+            bb &= bb - 1;
+
+            int x = sq % 8;
+            int y = 7 - (sq / 8);
+
+
+            Piece piece(whitePawnTexture);
+            piece.type = static_cast<chessPiece>(p);
+
+            switch (piece.type) {
+                case whitePawn: {
+                    piece.sprite.setTexture(whitePawnTexture);
+                    break;
+                }
+                case whiteKnight: {
+                    piece.sprite.setTexture(whiteKnightTexture);
+                    break;
+                }
+                case whiteBishop: {
+                    piece.sprite.setTexture(whiteBishopTexture);
+                    break;
+                }
+                case whiteRook: {
+                    piece.sprite.setTexture(whiteRookTexture);
+                    break;
+                }
+                case whiteQueen: {
+                    piece.sprite.setTexture(whiteQueenTexture);
+                    break;
+                }
+                case whiteKing: {
+                    piece.sprite.setTexture(whiteKingTexture);
+                    break;
+                }
+                case blackPawn: {
+                    piece.sprite.setTexture(blackPawnTexture);
+                    break;
+                }
+                case blackKnight: {
+                    piece.sprite.setTexture(blackKnightTexture);
+                    break;
+                }
+                case blackBishop: {
+                    piece.sprite.setTexture(blackBishopTexture);
+                    break;
+                }
+                case blackRook: {
+                    piece.sprite.setTexture(blackRookTexture);
+                    break;
+                }
+                case blackQueen: {
+                    piece.sprite.setTexture(blackQueenTexture);
+                    break;
+                }
+                case blackKing: {
+                    piece.sprite.setTexture(blackKingTexture);
+                    break;
+                }
+                default: break;
+            }
+            piece.sprite.setPosition({Size * x, Size * y});
+            auto pos = getOffsetPos();
+            piece.sprite.setScale({2.4f, 0.4f});
+            piece.col = x;
+            piece.row = y;
+            Pieces.emplace_back(piece);
+
         }
     }
     update();
@@ -123,7 +143,7 @@ void GUI::init() {
 void GUI::run() {
     window.setActive(false);
     std::thread thread([this]() { draw(&window); });
-
+    worker.inti();
     while (window.isOpen()) {
         std::optional<sf::Event> ev;
         {
@@ -144,6 +164,13 @@ void GUI::run() {
         }
         else if (const auto* mouseMove = ev->getIf<sf::Event::MouseMoved>()){
             handleMouseMove(mouseMove);
+        }
+        else if (const auto* keyPress = ev->getIf<sf::Event::KeyPressed>()){
+            if (keyPress->scancode == sf::Keyboard::Scan::Z){
+                worker.undo_move();
+                updateGUIFromBoard(worker.get_board());
+
+            }
         }
 
     }
@@ -171,8 +198,6 @@ int GUI::findBoard(int posx, int posy){
         int boardx = (pos.x - offset.x) / Size;
         int boardY = (pos.y - offset.y) / Size;
         if (posx == boardx && posy == boardY){
-            cout << " boardx: "<<  boardx<< " boardY: "  << boardY <<  endl;
-            cout<< "found" << endl;
             return i;
         }
     }
@@ -180,6 +205,7 @@ int GUI::findBoard(int posx, int posy){
 }
 
 sf::Vector2<float> GUI::getOffsetPos(){
+    UpdateTileSize();
     float width = (8.f*Size);
     float offsetx = (window.getSize().x - width) * 0.5f;
     float offsety = (window.getSize().y - width) * 0.5f;
@@ -190,38 +216,54 @@ void GUI::handlePieceDrop(sf::Event::MouseButtonPressed const * data){
     float mousex = data->position.x;
     float mousey = data->position.y;
 
-    cout<< "green1" << endl;
+    //get x and y offset, if window isnt perfect square, then theres gonna be some offset on either the x-axis or the y-axis
+    // need to know that offset to calc coords
     sf::Vector2<float> pos = getOffsetPos();
 
+    //calc coords
     int posx = static_cast<int> (mousex - pos.x) / Size;
     int posy = static_cast<int>(mousey -pos.y) / Size;
-    cout << " posx: "<<  posx<< " posy: "  << posy <<  endl;
+
+    //find index of board at coords, returns index if found, -1 if not found
     int boardPos = findBoard(posx, posy);
 
     if (boardPos != -1){
-        selectedPiece->sprite.setPosition({board[boardPos].getPosition().x, board[boardPos].getPosition().y });
-        cout <<   moveData.startX  << moveData.startY << endl;
+        // if same pos, then do nothing
         if (moveData.startX == posx && moveData.startY == posy){
             cout << "same pos" << endl;
-        }else{
-            MoveRequest moveRequest {
+            selectedPiece->sprite.setPosition({moveData.startXCoord, moveData.startYCoord});
+            selectedPiece = nullptr;
+            pieceSelected = false;
+            reset_green_boards();
+            return;
+        }
+        //create move request that we will send to engine
+        // y - 7 needed for when converting coords to bitcoords
+        MoveRequest moveRequest = {
                 selectedPiece->col,
-                selectedPiece->row,
+                7 - selectedPiece->row,
                 posx,
-                posy,
+                7-posy,
                 selectedPiece->type
-            };
+        };
+        //if legal move
+        if (worker.isLegalMove(moveRequest)) {
+            //update sprite
+            selectedPiece->sprite.setPosition({board[boardPos].getPosition().x, board[boardPos].getPosition().y });
+            // send move to engine
+            worker.submitJob(moveRequest);
             selectedPiece->row = posy;
             selectedPiece->col = posx;
             printType(selectedPiece->type);
         }
+        //
+        else{
+           cout << "not a legal move" << endl;
+           selectedPiece->sprite.setPosition({moveData.startXCoord, moveData.startYCoord});
+        }
         selectedPiece = nullptr;
         pieceSelected = false;
-        /*
-        Highlight.push_back({Board[boardPos].getFillColor(), &Board[boardPos]});
-        Board[boardPos].setFillColor(sf::Color::Green);
-        cout<< "green2" << endl;
-        */
+        reset_green_boards();
     }
 }
 
@@ -251,16 +293,51 @@ void GUI::printType(chessPiece type) {
 void GUI::handlePiecePickup(sf::Event::MouseButtonPressed const * data){
     float mousex = data->position.x;
     float mousey = data->position.y;
+
+    //get x and y offset, if window isnt perfect square, then theres gonna be some offset on either the x-axis or the y-axis
+    // need to know that offset to calc coords
+    sf::Vector2<float> pos = getOffsetPos();
+
+    //calc coords
+    int posx = static_cast<int> (mousex - pos.x) / Size;
+    int posy = static_cast<int>(mousey -pos.y) / Size;
+    cout << "mouse x: " << mousex << " mouse y: " << mousey << endl;
+    cout << "posx: " << posx << " posy: " << posy << endl;
     for (auto &chessPiece : Pieces){
-        if (chessPiece.sprite.getGlobalBounds().contains({mousex, mousey})){
+        if ((chessPiece.col == posx) && (chessPiece.row == posy)){
             moveData = {&chessPiece,
                         static_cast<int>(mousex - chessPiece.sprite.getGlobalBounds().position.x),
                         static_cast<int>(mousey - chessPiece.sprite.getGlobalBounds().position.y),
                         chessPiece.col,
-                        chessPiece.row};
+                        chessPiece.row,
+                        chessPiece.sprite.getGlobalBounds().position.x,
+                        chessPiece.sprite.getGlobalBounds().position.y};
             pieceSelected = true;
             selectedPiece = &chessPiece;
+            vector<pair<int, int>> coords = worker.getPositions(chessPiece.col, 7 - chessPiece.row, chessPiece.type);
+            for (auto pair : coords){
+                set_boards_to_green(pair.first, 7 - pair.second);
+            }
         }
+    }
+}
+
+void GUI::reset_green_boards(){
+    for (auto h : highlightHistory){
+        board[h.index].setFillColor(h.originalColor);
+    }
+    highlightHistory.clear();
+}
+
+void GUI::set_boards_to_green(int x, int y){
+    int index = findBoard(x, y);
+    if (index != -1){
+        highlight b = {
+                board[index].getFillColor(),
+                index
+        };
+        highlightHistory.emplace_back(b);
+        board[index].setFillColor(sf::Color::Green);
     }
 }
 
@@ -311,9 +388,12 @@ void GUI::draw(sf::RenderWindow* Window) {
                 for (const auto& rect : Pieces){
                     Window->draw(rect.sprite);
                 }
+                if (worker.isDone()){
+                    updateGUIFromBoard(worker.get_board());
+                    worker.set_isDone(false);
+                }
             }
             Window->display();
-
         }
     }
 }

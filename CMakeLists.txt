@@ -13,6 +13,9 @@ add_executable(schack main.cpp
         loadMoveAttackPatterns.h
         loadMoveAttackPatterns.h
         Enums.h
+        WorkerThread.cpp
+        WorkerThread.h
+
 )
 
 target_link_libraries(schack

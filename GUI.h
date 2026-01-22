@@ -10,9 +10,8 @@
 #include <SFML/Graphics.hpp>
 #include <iostream>
 #include <thread>
-#include "Board.h"
 #include "Enums.h"
-
+#include "WorkerThread.h"
 
 struct Piece {
     chessPiece type;
@@ -29,11 +28,13 @@ struct PieceMoveData{
     int deltay = 0;
     int startX = 0;
     int startY = 0;
+    float startXCoord = 0;
+    float startYCoord = 0;
 };
 
-struct HighlightHistory{
+struct highlight{
     sf::Color originalColor;
-    sf::RectangleShape* board;
+    int index = 0;
 };
 
 
@@ -54,9 +55,11 @@ private:
      * pointer to piece in Pieces list;
      */
     Piece *selectedPiece = nullptr;
-    vector<HighlightHistory> Highlight;
+    vector<highlight> highlightHistory = {};
     bool playersTurn;
     Board bitBoard;
+    atomic<bool> jobDone;
+    WorkerThread worker = WorkerThread();
 public:
     GUI(sf::RenderWindow &window);
 
@@ -83,9 +86,13 @@ public:
     void handlePiecePickup(sf::Event::MouseButtonPressed const *data);
     sf::Vector2<float> getOffsetPos();
 
-    void updateGUI(Board& board);
     void printType(chessPiece type);
     void send_to_board();
+    void set_boards_to_green(int x, int y);
+    void reset_green_boards();
+    void updateGUIFromBoard( Board b);
+
+
 
 
 
