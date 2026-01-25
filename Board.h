@@ -124,17 +124,17 @@ public:
     bool isLegal(MoveRequest data){
         U64 from = convert_coords_to_U64(data.fromX, data.fromY);
         U64 to = convert_coords_to_U64(data.toX, data.toY);
-        //cout << "from y: " << data.fromY << "to y: " << data.toY << "from x: "<< data.fromX << "to x" << data.toX << endl;
         int pos  = data.fromX + data.fromY * 8;
         if (!(fullBoard[data.type] & from)) return false;
         U64 ownPieces = (data.type <= whiteKing) ? whitePieces() : blackPieces();
         U64 opposingPieces = (data.type <= whiteKing) ? blackPieces() : whitePieces();
         if (to & ownPieces) return false;
+        bool isWhite = data.type <= whiteKing;
 
         switch (data.type) {
             case whiteKing:
             case blackKing: {
-                U64 moves = loadMoveAttackPatterns::loaded_king_moves[pos] & ~ownPieces;
+                U64 moves = loadMoveAttackPatterns::king_move(pos, ownPieces, get_opposing_moves(isWhite));
                 return (moves & to) != 0;
             }
 
@@ -195,6 +195,7 @@ public:
     }
 
 
+
     vector<pair<int, int>> getpositions(int x, int y, chessPiece piece){
         U64 from = convert_coords_to_U64(x, y);
         int pos  = x + (y * 8);
@@ -205,7 +206,7 @@ public:
         switch ((int)piece) {
             case whiteKing:
             case blackKing: {
-                return convert_coords_to_pair(loadMoveAttackPatterns::loaded_king_moves[pos] & ~ownPieces);
+                return convert_coords_to_pair(loadMoveAttackPatterns::king_move(pos, ownPieces, get_opposing_moves(piece <= whiteKing)));
             }
 
             case whiteKnight:
@@ -221,47 +222,16 @@ public:
             case whiteRook:
             case blackRook: {
                 return convert_coords_to_pair(loadMoveAttackPatterns::rook_move(pos, opposingPieces, ownPieces));
-
             }
-
             case whiteQueen:
             case blackQueen: {
                 return convert_coords_to_pair(loadMoveAttackPatterns::queen_move(pos, opposingPieces, ownPieces));
             }
             case whitePawn: {
-                cout << "x: " << x << "y: " << y << endl;
-                U64 moves = 0;
-                U64 attacks = loadMoveAttackPatterns::loaded_pawn_moves[0][pos] & ~ownPieces;
-                moves |= attacks & opposingPieces;
-                U64 empty = ~(ownPieces | opposingPieces);
-                U64 one = from << 8;
-                moves |= one & empty;
-                if (y == 1) {
-                    U64 two = from << 16;
-                    U64 between = from << 8;
-                    if ((between & empty) && (two & empty))
-                        moves |= two;
-                }
-                return convert_coords_to_pair(moves);
-
+                return convert_coords_to_pair(get_white_pawn_moves(pos, ownPieces, opposingPieces, from));
             }
             case blackPawn:{
-
-                U64 moves = 0;
-                U64 attacks = loadMoveAttackPatterns::loaded_pawn_moves[1][pos] & ~ownPieces;
-                moves |= attacks & opposingPieces;
-                U64 empty = ~(ownPieces | opposingPieces);
-                U64 one = from >> 8;
-                moves |= one & empty;
-
-                if (y == 6) {
-                    U64 two = from >> 16;
-                    U64 between = from >> 8;
-                    if ((between & empty) && (two & empty))
-                        moves |= two;
-                }
-
-                return convert_coords_to_pair(moves);
+                return convert_coords_to_pair(get_black_pawn_moves(pos, ownPieces, opposingPieces, from));
             }
             default:
                 return {};
@@ -287,8 +257,12 @@ public:
      */
     float short_eval(){
         float val = 0;
+        //0...5 == whites, 6...11 == black
         for (int i = 0; i < 11; i++){
+            //values[12] index 0...5 == positive values,   6...11 == negative values
             val += countSetBits(fullBoard[i]) * values[i];
+            cout << countSetBits(fullBoard[i]) * values[i] << endl;
+            cout << "I: " << i << endl;
         }
         return val;
     }
@@ -301,6 +275,180 @@ public:
         }
         return count;
     }
+
+    U64 get_opposing_moves(bool isWhite){
+        if (isWhite) return get_black_moves();
+        else return get_white_moves();
+    }
+
+    /**
+     *
+     * @return U64, all moves that the black player can move, useful for deciding where the white king cannot move
+     */
+    U64 get_black_moves(){
+        U64 moves = 0;
+        U64 opposingPieces = whitePieces();
+        U64 ownPieces = blackPieces();
+        //6...11 since enum class defined that what
+        for (int i = 6; i < 12; i++ ){
+            switch (i) {
+                case blackPawn:{
+                    U64 copy = fullBoard[blackPawn];
+                    while(copy){
+                        int index = __builtin_ctzll(copy);
+                        moves |= loadMoveAttackPatterns::loaded_pawn_moves[1][index];
+                        copy &= copy -1;
+                    }
+                    break;
+                }
+                case blackKnight:{
+                    U64 copy = fullBoard[blackKnight];
+                    while (copy){
+                        int index = __builtin_ctzll(copy);
+                        moves |= loadMoveAttackPatterns::knight_move(index, ownPieces);
+                        copy &= copy - 1;
+                    }
+                    break;
+                }
+                case blackBishop:{
+                    U64 copy = fullBoard[blackBishop];
+                    while (copy){
+                        int index = __builtin_ctzll(copy);
+                        moves |= loadMoveAttackPatterns::bishop_move(index, opposingPieces, ownPieces);
+                        copy &= copy - 1;
+                    }
+                    break;
+                }
+                case blackRook: {
+                    U64 copy = fullBoard[blackRook];
+                    while (copy){
+                        int index = __builtin_ctzll(copy);
+                        moves |= loadMoveAttackPatterns::rook_move(index, opposingPieces, ownPieces);
+                        copy &= copy - 1;
+                    }
+                    break;
+                }
+                case blackQueen: {
+                    U64 copy = fullBoard[blackQueen];
+                    while (copy){
+                        int index = __builtin_ctzll(copy);
+                        moves |= loadMoveAttackPatterns::queen_move(index, opposingPieces, ownPieces);
+                        copy &= copy - 1;
+                    }
+                }
+                case blackKing: {
+                    int index = __builtin_ctzll(fullBoard[blackKing]);
+                    moves |= loadMoveAttackPatterns::loaded_king_moves[index] &~ ownPieces;
+                    break;
+                }
+
+            }
+        }
+        return moves;
+
+    }
+
+    /**
+     *
+     * @return U64, returns all the moves the white player can move, useful for when deciding where the black king can move.
+     */
+    U64 get_white_moves(){
+        U64 moves = 0;
+        U64 opposingPieces = blackPieces();
+        U64 ownPieces = whitePieces();
+        //0...5 since enum class again
+        for (int i = 0; i < 6; i++){
+            switch (i) {
+                case whitePawn:{
+                    U64 copy = fullBoard[whitePawn];
+                    while(copy){
+                        int index = __builtin_ctzll(copy);
+                        moves |= loadMoveAttackPatterns::loaded_pawn_moves[0][index];
+                        copy &= copy -1;
+                    }
+                    break;
+                }
+                case whiteKnight:{
+                    U64 copy = fullBoard[whiteKnight];
+                    while (copy){
+                        int index = __builtin_ctzll(copy);
+                        moves |= loadMoveAttackPatterns::knight_move(index, ownPieces);
+                        copy &= copy - 1;
+                    }
+                    break;
+                }
+                case whiteBishop:{
+                    U64 copy = fullBoard[whiteBishop];
+                    while (copy){
+                        int index = __builtin_ctzll(copy);
+                        moves |= loadMoveAttackPatterns::bishop_move(index, opposingPieces, ownPieces);
+                        copy &= copy - 1;
+                    }
+                    break;
+                }
+                case whiteRook: {
+                    U64 copy = fullBoard[whiteRook];
+                    while (copy){
+                        int index = __builtin_ctzll(copy);
+                        moves |= loadMoveAttackPatterns::rook_move(index, opposingPieces, ownPieces);
+                        copy &= copy - 1;
+                    }
+                    break;
+                }
+                case whiteQueen: {
+                    U64 copy = fullBoard[whiteQueen];
+                    while (copy){
+                        int index = __builtin_ctzll(copy);
+                        moves |= loadMoveAttackPatterns::queen_move(index, opposingPieces, ownPieces);
+                        copy &= copy - 1;
+                    }
+                    break;
+                }
+                case whiteKing: {
+                    int index = __builtin_ctzll(fullBoard[whiteKing]);
+                    moves |= loadMoveAttackPatterns::loaded_king_moves[index] &~ ownPieces;
+                    break;
+                }
+
+            }
+        }
+        return moves;
+    }
+
+    static U64 get_white_pawn_moves(int pos, U64 ownPieces, U64 opposingPieces, U64 from){
+        U64 moves = 0;
+        U64 attacks = loadMoveAttackPatterns::loaded_pawn_moves[0][pos] & ~ownPieces;
+        moves |= attacks & opposingPieces;
+        U64 empty = ~(ownPieces | opposingPieces);
+        U64 one = from << 8;
+        moves |= one & empty;
+        if (pos >= 8 && pos <= 15) {
+            U64 two = from << 16;
+            U64 between = from << 8;
+            if ((between & empty) && (two & empty))
+                moves |= two;
+        }
+        return moves;
+    }
+
+    static U64 get_black_pawn_moves(int pos, U64 ownPieces, U64 opposingPieces, U64 from){
+        U64 moves = 0;
+        U64 attacks = loadMoveAttackPatterns::loaded_pawn_moves[1][pos] & ~ownPieces;
+        moves |= attacks & opposingPieces;
+        U64 empty = ~(ownPieces | opposingPieces);
+        U64 one = from >> 8;
+        moves |= one & empty;
+        if (pos >= 48 && pos <= 55) {
+            U64 two = from >> 16;
+            U64 between = from >> 8;
+            if ((between & empty) && (two & empty))
+                moves |= two;
+        }
+        return moves;
+    }
+
+
+
 
 
 

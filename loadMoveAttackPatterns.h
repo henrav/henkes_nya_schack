@@ -146,9 +146,12 @@ public:
         return loaded_knight_moves[pos] & ~ownPieces;
     }
 
-    static U64 king_move(int pos, U64 ownPieces){
-        return loaded_king_moves[pos] & ~ownPieces;
+    static U64 king_move(int pos, U64 ownPieces, U64 enemyMoves){
+        U64 moves = loaded_king_moves[pos] &~ownPieces;
+        return moves &~enemyMoves;
     }
+
+
 
     static U64 bishop_move(int pos, U64 opposingPieces, U64 ownPieces) {
         U64 attacks = 0;
