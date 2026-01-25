@@ -57,7 +57,6 @@ private:
     Piece *selectedPiece = nullptr;
     vector<highlight> highlightHistory = {};
     bool playersTurn;
-    Board bitBoard;
     atomic<bool> jobDone;
     WorkerThread worker = WorkerThread();
 public:

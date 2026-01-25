@@ -401,7 +401,6 @@ void GUI::draw(sf::RenderWindow* Window) {
 
 GUI::GUI(sf::RenderWindow& Window) : window(Window) {
     init();
-    bitBoard = Board();
 }
 
 inline float GUI::UpdateTileSize() {

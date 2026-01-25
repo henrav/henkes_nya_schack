@@ -18,14 +18,20 @@ struct moveHistoryData{
 };
 
 
+
+
 class Board {
     bool playersTurn;
     vector<moveHistoryData> history = {};
+    //pawn, knight, bishop, rook, queen, king
+    //king == 0 for now will fix later if ever
+    int values[12] = {1, 3, 3, 5, 10, 0, -1, -3, -3, -5, -10, 0};
 
 public:
     Board(){
         init();
         loadMoveAttackPatterns::init_tables();
+       cout << short_eval() << endl;
     };
 
     U64 fullBoard[pieceCount];
@@ -66,6 +72,7 @@ public:
         history.push_back(h);
         fullBoard[type] &= ~from;
         fullBoard[type] |= to;
+        cout << short_eval() << endl;
     }
 
     void pop_back_history(){
@@ -272,6 +279,31 @@ public:
         }
         return coords;
     }
+
+    /**
+     *
+     * Simple eval board func, whites increase points, blacks decrease.
+     * @return white - blacks
+     */
+    float short_eval(){
+        float val = 0;
+        for (int i = 0; i < 11; i++){
+            val += countSetBits(fullBoard[i]) * values[i];
+        }
+        return val;
+    }
+
+    static int countSetBits(U64 n){
+        int  count = 0;
+        while (n){
+            n &= (n - 1);
+            count++;
+        }
+        return count;
+    }
+
+
+
 
 
 };
